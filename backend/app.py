@@ -195,9 +195,11 @@ async def estimate_depth(
     if orig_w <= 0 or orig_h <= 0:
         raise HTTPException(status_code=400, detail="Invalid image dimensions (0x0).")
 
-    # Resolve provider and checkpoint (defaults to presentation-safe da2_zero_shot)
+    # Resolve provider and checkpoint (defaults to configured DEPTH_MODEL_PROVIDER)
     req_provider = provider if provider in ("da2_zero_shot", "da2_fine_tuned") else DEPTH_MODEL_PROVIDER
-    if req_provider == "da2_zero_shot":
+    if req_provider == DEPTH_MODEL_PROVIDER and DEPTH_MODEL_CHECKPOINT:
+        req_checkpoint = DEPTH_MODEL_CHECKPOINT
+    elif req_provider == "da2_zero_shot":
         req_checkpoint = "depth-anything/Depth-Anything-V2-Small-hf"
     elif req_provider == "da2_fine_tuned":
         req_checkpoint = "backend/checkpoints/da2_finetuned.pth"

@@ -8,14 +8,98 @@ Depth Anything V2 Small checkpoint.
 
 import os
 import time
+import hashlib
+import shutil
 from pathlib import Path
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, Union
 import numpy as np
 from PIL import Image
 import torch
 from transformers import pipeline
+from huggingface_hub import hf_hub_download
 
+from backend.config import (
+    HF_SPACE_REPO_ID,
+    HF_SPACE_REPO_TYPE,
+    HF_SPACE_FILENAME,
+    DA2_FINETUNED_SHA256,
+)
 from .base import DepthEstimator
+
+
+def compute_sha256(file_path: Union[str, Path]) -> str:
+    """
+    Computes lowercase hex SHA-256 hash of a file using chunked binary streaming.
+    """
+    hasher = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        while chunk := f.read(65536):
+            hasher.update(chunk)
+    return hasher.hexdigest().lower()
+
+
+def verify_checkpoint_sha256(file_path: Union[str, Path], expected_sha256: str) -> bool:
+    """
+    Verifies that a file matches the expected SHA-256 checksum.
+    """
+    return compute_sha256(file_path) == expected_sha256.lower()
+
+
+def acquire_hf_checkpoint(
+    repo_id: str = HF_SPACE_REPO_ID,
+    repo_type: str = HF_SPACE_REPO_TYPE,
+    filename: str = HF_SPACE_FILENAME,
+    expected_sha256: str = DA2_FINETUNED_SHA256,
+    target_path: Optional[Path] = None,
+) -> Path:
+    """
+    Downloads the fine-tuned DA2 checkpoint from a Hugging Face Space, verifies
+    its SHA-256 checksum BEFORE allowing it to be loaded, and persists it to the
+    target cache/checkpoint location.
+
+    Raises:
+        RuntimeError: If download fails or SHA-256 integrity verification fails.
+    """
+    print(f"[DA2FineTunedProvider] Local checkpoint absent. Acquiring '{filename}' from HF {repo_type} '{repo_id}'...")
+    try:
+        downloaded_file = hf_hub_download(
+            repo_id=repo_id,
+            repo_type=repo_type,
+            filename=filename,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to acquire fine-tuned checkpoint '{filename}' from Hugging Face Space '{repo_id}': {exc}"
+        ) from exc
+
+    downloaded_path = Path(downloaded_file)
+    print(f"[DA2FineTunedProvider] Artifact downloaded to '{downloaded_path}'. Verifying SHA-256...")
+
+    # Strict SHA-256 verification BEFORE any torch.load
+    computed_sha256 = compute_sha256(downloaded_path)
+    if computed_sha256 != expected_sha256.lower():
+        raise RuntimeError(
+            f"Security/Integrity failure: Checkpoint SHA-256 mismatch for downloaded artifact '{filename}'.\n"
+            f"  Expected: {expected_sha256}\n"
+            f"  Computed: {computed_sha256}\n"
+            f"Refusing to load untrusted or corrupted checkpoint. Zero-shot fallback is disallowed."
+        )
+
+    print(f"[DA2FineTunedProvider] SHA-256 checksum verified ({computed_sha256[:12]}...).")
+
+    if target_path is not None:
+        try:
+            target_path = Path(target_path)
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            if downloaded_path.resolve() != target_path.resolve():
+                print(f"[DA2FineTunedProvider] Saving verified artifact to '{target_path}'...")
+                shutil.copy2(downloaded_path, target_path)
+            return target_path
+        except Exception as exc:
+            print(f"[DA2FineTunedProvider] Warning: Could not cache artifact to '{target_path}' ({exc}). Using HF cache path '{downloaded_path}'.")
+            return downloaded_path
+
+    return downloaded_path
 
 
 class DA2FineTunedProvider(DepthEstimator):
@@ -26,16 +110,24 @@ class DA2FineTunedProvider(DepthEstimator):
     """
 
     BASE_MODEL_ID = "depth-anything/Depth-Anything-V2-Small-hf"
+    DEFAULT_REPO_ID = HF_SPACE_REPO_ID
+    DEFAULT_REPO_TYPE = HF_SPACE_REPO_TYPE
+    DEFAULT_FILENAME = HF_SPACE_FILENAME
+    DEFAULT_EXPECTED_SHA256 = DA2_FINETUNED_SHA256
 
     def __init__(
         self,
         checkpoint: Optional[str] = None,
-        device: str = "auto"
+        device: str = "auto",
+        expected_sha256: Optional[str] = None,
+        hf_repo_id: Optional[str] = None,
     ):
         self.raw_checkpoint_arg = checkpoint
-        self.checkpoint_path = self._resolve_checkpoint_path(checkpoint)
+        self.expected_sha256 = expected_sha256 or self.DEFAULT_EXPECTED_SHA256
+        self.hf_repo_id = hf_repo_id or self.DEFAULT_REPO_ID
         self.device_pref = device
         self.device = self._resolve_device(device)
+        self.checkpoint_path = self._resolve_checkpoint_path(checkpoint)
         self._pipe = None
         self._loaded = False
         self._epoch: Optional[int] = None
@@ -44,26 +136,45 @@ class DA2FineTunedProvider(DepthEstimator):
 
     def _resolve_checkpoint_path(self, checkpoint: Optional[str]) -> Path:
         """
-        Resolves the fine-tuned .pth checkpoint path with fallbacks.
+        Resolves the fine-tuned .pth checkpoint path with fallbacks and HF Space acquisition.
+
+        Order of precedence:
+        1. Explicit candidate path if provided (and distinct from base model ID):
+           If file exists locally -> return candidate.
+        2. Default project checkpoint path (backend/checkpoints/da2_finetuned.pth):
+           If file exists locally -> return default_local.
+        3. If local checkpoint is absent:
+           Download da2_finetuned.pth from Hugging Face Space, verify SHA-256 checksum,
+           save to target checkpoint location, and return verified path.
         """
         # Default local project path
         project_root = Path(__file__).resolve().parent.parent.parent
         default_local = project_root / "backend" / "checkpoints" / "da2_finetuned.pth"
 
+        # 1. Check explicit argument if provided and valid
         if checkpoint and checkpoint != self.BASE_MODEL_ID:
             candidate = Path(checkpoint)
             if not candidate.is_absolute():
                 candidate = (project_root / candidate).resolve()
             if candidate.is_file():
+                print(f"[DA2FineTunedProvider] Using local checkpoint: {candidate}")
                 return candidate
+            target_path = candidate
+        else:
+            # 2. Check default local path
+            if default_local.is_file():
+                print(f"[DA2FineTunedProvider] Using local checkpoint: {default_local}")
+                return default_local
+            target_path = default_local
 
-        if default_local.is_file():
-            return default_local
-
-        raise FileNotFoundError(
-            f"Fine-tuned checkpoint not found. Looked at:\n"
-            f"  1. Explicit arg: {checkpoint}\n"
-            f"  2. Project local: {default_local}"
+        # 3. Local checkpoint absent: trigger HF Space artifact acquisition
+        print(f"[DA2FineTunedProvider] Local checkpoint absent at '{target_path}'. Initiating HF acquisition...")
+        return acquire_hf_checkpoint(
+            repo_id=self.hf_repo_id,
+            repo_type=self.DEFAULT_REPO_TYPE,
+            filename=self.DEFAULT_FILENAME,
+            expected_sha256=self.expected_sha256,
+            target_path=target_path,
         )
 
     def _resolve_device(self, pref: str) -> str:
