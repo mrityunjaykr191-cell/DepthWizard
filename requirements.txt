@@ -10,7 +10,7 @@ safetensors==0.8.0
 huggingface-hub==1.7.1
 pillow==12.1.1
 rasterio==1.4.4
-opencv-python==4.10.0
+opencv-python==4.10.0.84
 pymupdf==1.27.2
 pyproj==3.7.2
 affine==3.0.1
