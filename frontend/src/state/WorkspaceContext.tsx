@@ -301,6 +301,8 @@ export interface WorkspaceState {
   setToolState: (state: ToolSelectionState) => void;
   setActiveLayer: (layer: TerrainLayer) => void;
   setVerticalExaggeration: (scale: number) => void;
+  wireframe: boolean;
+  setWireframe: (enabled: boolean) => void;
   isSidebarCollapsed: boolean;
   setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
   cancelActiveTool: () => void;
@@ -322,6 +324,7 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [toolState, setToolState] = useState<ToolSelectionState>('INACTIVE');
   const [activeLayer, setActiveLayerState] = useState<TerrainLayer>('rgb');
   const [verticalExaggeration, setVerticalExaggeration] = useState<number>(1.0);
+  const [wireframe, setWireframe] = useState<boolean>(false);
   const [uiState, setUiState] = useState<AppUiState>('READY');
   const [depthResult, setDepthResult] = useState<DepthResult | null>(null);
   const [relativeHeightfield, setRelativeHeightfield] = useState<RelativeHeightfield | null>(null);
@@ -1862,6 +1865,8 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
         setToolState,
         setActiveLayer,
         setVerticalExaggeration,
+        wireframe,
+        setWireframe,
         isSidebarCollapsed,
         setIsSidebarCollapsed,
         cancelActiveTool,

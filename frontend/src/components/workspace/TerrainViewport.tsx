@@ -3,13 +3,13 @@ import { useWorkspace, CameraPreset } from '../../state/WorkspaceContext';
 import { AnimatePresence, motion } from 'motion/react';
 import { TerrainCanvas } from './terrain/TerrainCanvas';
 import { CameraOrientation } from './terrain/TerrainCamera';
-import { 
-  Box, 
-  Map, 
-  Footprints, 
-  Layers, 
-  Compass, 
-  AlertCircle, 
+import {
+  Box,
+  Map,
+  Footprints,
+  Layers,
+  Compass,
+  AlertCircle,
   Loader2,
   X
 } from 'lucide-react';
@@ -45,21 +45,23 @@ function getInteractionPrompt(activeTool: string, viewMode: string, autoRotate: 
 }
 
 export const TerrainViewport: React.FC = () => {
-  const { 
-    result, 
-    viewMode, 
+  const {
+    result,
+    viewMode,
     cameraPreset,
     setCameraPreset,
     autoRotate,
     setAutoRotate,
-    activeLayer, 
+    activeLayer,
     setActiveLayer,
     activeLayerLegend,
     isAnalyticsLoading,
-    activeTool, 
+    activeTool,
     uiState,
     verticalExaggeration,
     setVerticalExaggeration,
+    wireframe,
+    setWireframe,
     imageInput,
     screeningMask,
     errorMapArray
@@ -80,7 +82,7 @@ export const TerrainViewport: React.FC = () => {
   ];
 
   return (
-    <main 
+    <main
       className="flex-1 flex flex-col bg-dw-base relative overflow-hidden select-none"
       aria-label="Terrain Viewport"
     >
@@ -89,7 +91,7 @@ export const TerrainViewport: React.FC = () => {
         {/* Left: View Mode Tag & Core Scientific Layer Switcher */}
         <div className="flex items-center space-x-2 pointer-events-auto shrink-0">
           {/* Active View Mode Tag */}
-          <div 
+          <div
             className="px-2.5 py-1 bg-dw-surface/90 border border-dw-border-strong rounded-xs text-xs font-mono flex items-center space-x-1.5 backdrop-blur-sm shadow-sm transition-all duration-fast"
             title={`Active View Mode: ${viewMode}`}
           >
@@ -128,6 +130,40 @@ export const TerrainViewport: React.FC = () => {
             {isAnalyticsLoading && (
               <Loader2 className="w-3 h-3 text-dw-accent animate-spin ml-1 mr-1" />
             )}
+          </div>
+
+          {/* Geometry Mesh Mode Toggle: Solid / Wireframe */}
+          <div
+            className="px-1.5 py-0.5 bg-dw-surface/90 border border-dw-border-strong rounded-xs text-xs font-mono flex items-center space-x-1 backdrop-blur-sm shadow-sm transition-all duration-fast"
+            role="group"
+            aria-label="Terrain geometry display mode"
+          >
+            <button
+              type="button"
+              onClick={() => setWireframe(false)}
+              className={`px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-medium transition-all ${
+                !wireframe
+                  ? 'bg-dw-accent text-white font-semibold shadow-xs'
+                  : 'text-dw-text-secondary hover:text-dw-text-primary hover:bg-dw-panel/70'
+              }`}
+              title="Solid terrain surface rendering (default)"
+              aria-pressed={!wireframe}
+            >
+              SOLID
+            </button>
+            <button
+              type="button"
+              onClick={() => setWireframe(true)}
+              className={`px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-medium transition-all ${
+                wireframe
+                  ? 'bg-dw-accent text-white font-semibold shadow-xs'
+                  : 'text-dw-text-secondary hover:text-dw-text-primary hover:bg-dw-panel/70'
+              }`}
+              title="Wireframe analytical geometry mesh"
+              aria-pressed={wireframe}
+            >
+              WIREFRAME
+            </button>
           </div>
 
           {/* Active Overlay Indicator */}
@@ -195,8 +231,8 @@ export const TerrainViewport: React.FC = () => {
         {/* Right: Compact Scene Context (Identity, CRS, Grid Dimensions) */}
         <div className="flex items-center space-x-2 pointer-events-auto shrink-0">
           <div className="px-2.5 py-1 bg-dw-surface/90 border border-dw-border-strong rounded-xs text-[11px] font-mono text-dw-text-muted flex items-center space-x-2 backdrop-blur-sm shadow-sm">
-            <span 
-              className="text-dw-text-primary font-medium truncate max-w-[130px] md:max-w-[170px] lg:max-w-[220px]" 
+            <span
+              className="text-dw-text-primary font-medium truncate max-w-[130px] md:max-w-[170px] lg:max-w-[220px]"
               title={imageInput?.metadata?.filename || result.source.filename || 'Synthetic Benchmark'}
             >
               {imageInput?.metadata?.filename || result.source.filename || 'Synthetic Benchmark'}
@@ -238,7 +274,7 @@ export const TerrainViewport: React.FC = () => {
                 </h3>
               </div>
               <div className="w-full bg-dw-panel h-1.5 rounded-xs overflow-hidden">
-                <div 
+                <div
                   className="bg-dw-accent h-full transition-all duration-300"
                   style={{ width: `${(result.processing_progress?.progress || 0.45) * 100}%` }}
                 />
@@ -362,7 +398,7 @@ export const TerrainViewport: React.FC = () => {
       {/* Viewport Floating Bottom Controls — Themed UI Chrome */}
       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
         {/* Left: Vertical Exaggeration Slider */}
-        <div 
+        <div
           className="px-3 py-1.5 bg-dw-surface/90 border border-dw-border-strong rounded-xs text-xs font-mono flex items-center space-x-2.5 pointer-events-auto backdrop-blur-sm shadow-sm"
           title="Visualization only — source elevations unchanged"
         >

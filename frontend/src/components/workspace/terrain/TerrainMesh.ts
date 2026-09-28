@@ -1,14 +1,14 @@
 /**
  * DepthWizard — Generic Terrain Mesh & Geometry (Three.js V2.4)
  * Authority: Phase 1B.2 Scope & Three.js V2.4 Visual Refinement Spec
- * 
+ *
  * ============================================================================
  * COORDINATE SYSTEM CONVENTION:
  * ============================================================================
  * X = Horizontal terrain axis (relative lateral grid dimension)
  * Y = Elevation axis (positive is strictly vertically upward)
  * Z = Horizontal terrain axis (relative longitudinal grid dimension)
- * 
+ *
  * IMPORTANT ARCHITECTURAL RULES:
  * 1. PURELY VISUAL: The Three.js mesh uses a lightweight, resampled, edge-aware
  *    smoothed copy of the heightfield for rendering geometry and continuous normals.
@@ -72,12 +72,13 @@ export interface TerrainElevationGrid {
 
 export class TerrainMesh {
   public readonly mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
-  public readonly geometry: THREE.BufferGeometry;
+  public geometry: THREE.BufferGeometry;
   public readonly material: THREE.MeshStandardMaterial;
 
   private currentData: TerrainElevationGrid;
   private currentExaggeration: number;
   private activeLayer: TerrainLayer = 'rgb';
+  private isWireframe: boolean = false;
   private lastLayerOptions?: AnalyticalLayerOptions;
   private rgbTexture: THREE.Texture | null = null;
   private currentTextureUrl: string | null = null;
@@ -98,12 +99,7 @@ export class TerrainMesh {
 
     if (this.currentTextureUrl === textureUrl) {
       if (this.rgbTexture && this.activeLayer === 'rgb') {
-        this.material.map = this.rgbTexture;
-        this.material.color.setHex(0xffffff);
-        this.material.vertexColors = false;
-        this.material.roughness = 0.85;
-        this.material.metalness = 0.0;
-        this.material.needsUpdate = true;
+        this.updateMaterialSurface();
         onLoaded?.();
       }
       return;
@@ -116,12 +112,7 @@ export class TerrainMesh {
         this.rgbTexture = null;
       }
       if (this.activeLayer === 'rgb') {
-        this.material.map = null;
-        this.material.color.setHex(0x5a6878);
-        this.material.vertexColors = false;
-        this.material.roughness = 0.88;
-        this.material.metalness = 0.0;
-        this.material.needsUpdate = true;
+        this.updateMaterialSurface();
       }
       return;
     }
@@ -143,12 +134,7 @@ export class TerrainMesh {
         this.rgbTexture = tex;
 
         if (this.activeLayer === 'rgb') {
-          this.material.map = tex;
-          this.material.color.setHex(0xffffff);
-          this.material.vertexColors = false;
-          this.material.roughness = 0.85;
-          this.material.metalness = 0.0;
-          this.material.needsUpdate = true;
+          this.updateMaterialSurface();
         }
         this.onTextureLoadedCallback?.();
       },
@@ -288,19 +274,11 @@ export class TerrainMesh {
 
   /**
    * Replaces the terrain elevation data with new generic grid data.
-   * Re-uses existing buffers if visual dimensions match, or reconstructs attributes if dimensions differ.
-   */
-  /**
-   * Applies the current active visual heightfield and vertical exaggeration to BufferGeometry positions in place.
-  /**
-   * Replaces the terrain elevation data with new generic grid data.
-   * Re-uses existing buffers if visual dimensions match, or reconstructs attributes if dimensions differ.
+   * Full buffer reconstruction guarantees accurate bounds, normals, UVs, and vertex positions.
    */
   public setTerrainData(data: TerrainElevationGrid): boolean {
     this.validateGridData(data);
 
-    const prevCols = this.processedVisual.visualCols;
-    const prevRows = this.processedVisual.visualRows;
     this.currentData = data;
 
     // Recompute visual heightfield using updated dataset
@@ -316,30 +294,14 @@ export class TerrainMesh {
       data.nodata
     );
 
-    const sameDimensions = prevCols === this.processedVisual.visualCols && 
-                           prevRows === this.processedVisual.visualRows;
-
-    if (sameDimensions && this.geometry.getAttribute('position')) {
-      // Fast path: update vertex Y values in place without reallocating buffers
-      const posAttr = this.geometry.getAttribute('position') as THREE.BufferAttribute;
-      const positions = posAttr.array as Float32Array;
-      const count = this.processedVisual.visualCols * this.processedVisual.visualRows;
-      const baseElevation = this.processedVisual.baseElevation;
-      const verticalScale = this.processedVisual.verticalScale;
-      const elevations = this.processedVisual.visualElevations;
-
-      for (let i = 0; i < count; i++) {
-        positions[i * 3 + 1] = (elevations[i] - baseElevation) * verticalScale * this.currentExaggeration;
-      }
-
-      posAttr.needsUpdate = true;
-      this.geometry.computeVertexNormals();
-      this.geometry.computeBoundingBox();
-      this.geometry.computeBoundingSphere();
-    } else {
-      // Rebuild buffers for new grid dimensions
-      this.buildGeometryBuffers();
-    }
+    // Rebuild geometry buffers completely on a clean BufferGeometry instance.
+    // Disposing old geometry frees WebGL buffers, flushes cached VAOs in bindingStates,
+    // and purges stale wireframe index attributes in WebGLGeometries, preventing
+    // wireframe line collapse/corruption across dataset switches.
+    this.geometry.dispose();
+    this.geometry = new THREE.BufferGeometry();
+    this.mesh.geometry = this.geometry;
+    this.buildGeometryBuffers();
 
     if (this.lastLayerOptions) {
       this.setAnalyticalLayer(this.lastLayerOptions);
@@ -369,6 +331,9 @@ export class TerrainMesh {
       this.currentData.nodata
     );
 
+    this.geometry.dispose();
+    this.geometry = new THREE.BufferGeometry();
+    this.mesh.geometry = this.geometry;
     this.buildGeometryBuffers();
 
     if (this.lastLayerOptions) {
@@ -396,7 +361,7 @@ export class TerrainMesh {
 
   /**
    * Applies a rendering-only vertical exaggeration.
-   * 
+   *
    * CRITICAL GUARANTEE:
    * The source elevation array (this.currentData.elevations) remains completely unchanged.
    * Only the rendered BufferGeometry position attribute Y values are modified.
@@ -432,6 +397,65 @@ export class TerrainMesh {
 
   public getVerticalExaggeration(): number {
     return this.currentExaggeration;
+  }
+
+  /**
+   * Synchronizes material properties (texture map, vertex colors, base color)
+   * depending on whether solid surface or analytical wireframe is active.
+   *
+   * When wireframe is active on RGB layer:
+   * Detaches the photographic RGB texture map so individual photo pixels (e.g. dark asphalt/shadows)
+   * do not black out wireframe edges against the dark viewport, and isolated bright structures
+   * do not appear as disconnected solid patches. Renders clean, visible slate wireframe (0x94a3b8)
+   * across the complete terrain bounds.
+   */
+  private updateMaterialSurface(): void {
+    if (this.activeLayer === 'rgb') {
+      if (this.isWireframe) {
+        this.material.map = null;
+        this.material.color.setHex(0x94a3b8);
+        this.material.vertexColors = false;
+        this.material.roughness = 0.88;
+        this.material.metalness = 0.0;
+      } else if (this.rgbTexture) {
+        this.material.map = this.rgbTexture;
+        this.material.color.setHex(0xffffff);
+        this.material.vertexColors = false;
+        this.material.roughness = 0.85;
+        this.material.metalness = 0.0;
+      } else {
+        // Fallback default Bedrock: matte mineral slate
+        this.material.map = null;
+        this.material.color.setHex(0x5a6878);
+        this.material.vertexColors = false;
+        this.material.roughness = 0.88;
+        this.material.metalness = 0.0;
+      }
+      this.material.needsUpdate = true;
+    } else {
+      // In analytical layers (elevation, slope, hillshade, screening, error),
+      // the layer colormap provides vertex colors.
+      this.material.map = null;
+      if (this.geometry.getAttribute('color')) {
+        this.material.vertexColors = true;
+        this.material.color.setHex(0xffffff);
+      }
+      this.material.needsUpdate = true;
+    }
+  }
+
+  public setWireframe(enabled: boolean): boolean {
+    if (this.isWireframe === enabled) {
+      return false;
+    }
+    this.isWireframe = enabled;
+    this.material.wireframe = enabled;
+    this.updateMaterialSurface();
+    return true;
+  }
+
+  public getWireframe(): boolean {
+    return this.isWireframe;
   }
 
   public getTerrainData(): TerrainElevationGrid {
@@ -481,7 +505,7 @@ export class TerrainMesh {
 
   /**
    * Applies an analytical visualization layer (Elevation, Slope, Hillshade, or Default Bedrock).
-   * 
+   *
    * CRITICAL GUARANTEES:
    * - Does NOT alter vertex positions X, Y, Z.
    * - Does NOT mutate underlying Float32 elevation or derivative arrays.
@@ -496,24 +520,8 @@ export class TerrainMesh {
     let colors: Float32Array | null = null;
 
     if (options.layer === 'rgb') {
-      if (this.rgbTexture) {
-        this.material.map = this.rgbTexture;
-        this.material.color.setHex(0xffffff);
-        this.material.vertexColors = false;
-        this.material.roughness = 0.85;
-        this.material.metalness = 0.0;
-        this.material.needsUpdate = true;
-        return true;
-      } else {
-        // Fallback default Bedrock: matte mineral slate
-        this.material.map = null;
-        this.material.color.setHex(0x5a6878);
-        this.material.vertexColors = false;
-        this.material.roughness = 0.88;
-        this.material.metalness = 0.0;
-        this.material.needsUpdate = true;
-        return true;
-      }
+      this.updateMaterialSurface();
+      return true;
     } else {
       // Remove RGB texture map when viewing analytical layer
       this.material.map = null;

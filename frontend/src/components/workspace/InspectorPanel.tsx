@@ -104,7 +104,8 @@ export const InspectorPanel: React.FC = () => {
     setTimeout(() => setReportAdded(false), 2000);
   };
 
-  const unit = result.elevation.unit;
+  const isCalibrated = scientificStatus === 'CALIBRATED';
+  const unit = isCalibrated ? (result.elevation.unit === 'relative units' ? 'm' : result.elevation.unit) : 'relative units';
 
   return (
     <aside className="w-80 border-l border-dw-border-subtle bg-dw-surface flex flex-col justify-between select-none z-10 min-h-0 overflow-hidden">
@@ -199,9 +200,15 @@ export const InspectorPanel: React.FC = () => {
                         <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded-xs ${
                           probeResult.is_metric 
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-dw-surface-hover text-dw-text-secondary border border-dw-border-subtle'
+                            : scientificStatus === 'CALIBRATION_REJECTED'
+                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                         }`}>
-                          {probeResult.is_metric ? 'ABSOLUTE (CALIBRATED)' : 'RELATIVE HEIGHT'}
+                          {probeResult.is_metric
+                            ? 'METRIC TERRAIN'
+                            : scientificStatus === 'CALIBRATION_REJECTED'
+                            ? 'CALIBRATION REJECTED'
+                            : 'RELATIVE TERRAIN'}
                         </span>
                         <span className="text-[10px] text-dw-text-muted">
                           STATE: {probeResult.calibration_state.toUpperCase()}
@@ -1216,7 +1223,7 @@ export const InspectorPanel: React.FC = () => {
               />
             )}
 
-            {/* 1. SCENE / INPUT */}
+            {/* 1. SCENE / INPUT IDENTITY */}
             <div className="p-3 bg-dw-panel/85 border border-dw-border-strong rounded-xs space-y-2">
               <div className="flex items-center justify-between pb-1.5 border-b border-dw-border-subtle">
                 <div className="flex items-center space-x-1.5 text-dw-accent">
@@ -1262,7 +1269,7 @@ export const InspectorPanel: React.FC = () => {
               <dl className="divide-y divide-dw-border-subtle/60 text-xs font-mono">
                 {!imageInput?.previewUrl && (
                   <div className="flex justify-between py-1">
-                    <dt className="text-dw-text-muted">NAME</dt>
+                    <dt className="text-dw-text-muted">DATASET</dt>
                     <dd className="text-dw-text-primary font-medium truncate max-w-[150px]" title={imageInput?.metadata?.filename || result.source.filename}>
                       {imageInput?.metadata?.filename || result.source.filename}
                     </dd>
@@ -1271,19 +1278,13 @@ export const InspectorPanel: React.FC = () => {
                 <div className="flex justify-between py-1">
                   <dt className="text-dw-text-muted">GRID DIMENSIONS</dt>
                   <dd className="text-dw-text-primary tabular-nums">
-                    {result.source.dimensions.width} × {result.source.dimensions.height}
+                    {result.source.dimensions.width} × {result.source.dimensions.height} px
                   </dd>
                 </div>
                 <div className="flex justify-between py-1">
-                  <dt className="text-dw-text-muted">SPATIAL REFERENCE</dt>
-                  <dd className={`font-semibold uppercase text-[11px] ${
-                    imageInput?.metadata?.spatial.hasGeoreference || result.geospatial.georeferenced 
-                      ? 'text-emerald-400' 
-                      : 'text-amber-400'
-                  }`}>
-                    {imageInput?.metadata?.spatial.hasGeoreference || result.geospatial.georeferenced 
-                      ? (result.geospatial.crs ? result.geospatial.crs.split(' ')[0] : 'GEOREFERENCED') 
-                      : 'UNPROJECTED (RELATIVE)'}
+                  <dt className="text-dw-text-muted">SOURCE FORMAT</dt>
+                  <dd className="text-dw-text-primary font-medium uppercase text-[11px]">
+                    {imageInput?.metadata?.format || result.source.input_type}
                   </dd>
                 </div>
               </dl>
@@ -1316,29 +1317,35 @@ export const InspectorPanel: React.FC = () => {
                   {scientificStatus === 'CALIBRATED' && (
                     <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-semibold tracking-wider">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>CALIBRATED (METRIC)</span>
+                      <span>METRIC TERRAIN</span>
                     </span>
                   )}
-                  {scientificStatus === 'RELATIVE' && (
+                  {scientificStatus === 'CALIBRATION_REJECTED' && (
+                    <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xs bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[10px] font-mono font-semibold tracking-wider">
+                      <AlertTriangle className="w-3 h-3 text-rose-400" />
+                      <span>CALIBRATION REJECTED</span>
+                    </span>
+                  )}
+                  {(scientificStatus === 'RELATIVE' || scientificStatus === 'CALIBRATION_UNAVAILABLE') && (
                     <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-semibold tracking-wider">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                       <span>RELATIVE TERRAIN</span>
                     </span>
                   )}
-                  {scientificStatus === 'CALIBRATION_REJECTED' && (
-                    <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xs bg-red-500/10 text-red-400 border border-red-500/30 text-[10px] font-mono font-semibold tracking-wider">
-                      <AlertTriangle className="w-3 h-3 text-red-400" />
-                      <span>CALIBRATION REJECTED</span>
-                    </span>
-                  )}
-                  {scientificStatus === 'CALIBRATION_UNAVAILABLE' && (
-                    <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xs bg-zinc-500/10 text-zinc-400 border border-zinc-500/30 text-[10px] font-mono font-semibold tracking-wider">
-                      <span className="w-1.5 h-1.5 rounded-full border border-zinc-400" />
-                      <span>CALIBRATION UNAVAILABLE</span>
-                    </span>
-                  )}
                 </div>
               </div>
+
+              {scientificStatus === 'CALIBRATION_REJECTED' && (
+                <div className="p-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xs text-[10px] space-y-1">
+                  <div className="font-semibold flex items-center space-x-1">
+                    <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
+                    <span>Calibration Rejected by Guardrails</span>
+                  </div>
+                  <p className="text-rose-300/80 leading-normal">
+                    {qaResult.rejection_reason || calibrationResult?.failureReason || 'Elevation data failed scientific validation. Values remain uncalibrated relative height.'}
+                  </p>
+                </div>
+              )}
 
               <dl className="divide-y divide-dw-border-subtle/60 text-xs font-mono">
                 <div className="flex justify-between py-1 items-center">
@@ -1355,8 +1362,14 @@ export const InspectorPanel: React.FC = () => {
                 </div>
                 <div className="flex justify-between py-1 items-center">
                   <dt className="text-dw-text-muted">VERTICAL DATUM</dt>
-                  <dd className="text-dw-text-primary font-medium text-[11px] truncate max-w-[150px]" title={result.geospatial.vertical_reference || calibrationResult?.verticalReference || (scientificStatus === 'CALIBRATED' ? 'EGM96 Geoid Height' : 'Arbitrary Relative Surface')}>
-                    {result.geospatial.vertical_reference || calibrationResult?.verticalReference || (scientificStatus === 'CALIBRATED' ? 'EGM96 Geoid Height' : 'Arbitrary Relative Surface')}
+                  <dd className="text-dw-text-primary font-medium text-[11px] truncate max-w-[150px]" title={isCalibrated ? (result.geospatial.vertical_reference || calibrationResult?.verticalReference || 'EGM96 Geoid Height') : 'Arbitrary Relative Surface'}>
+                    {isCalibrated ? (result.geospatial.vertical_reference || calibrationResult?.verticalReference || 'EGM96 Geoid Height') : 'Arbitrary Relative Surface (Uncalibrated)'}
+                  </dd>
+                </div>
+                <div className="flex justify-between py-1 items-center text-dw-text-disabled text-[10px]">
+                  <dt className="text-dw-text-muted">SURFACE MODEL</dt>
+                  <dd className="text-dw-text-secondary truncate max-w-[150px]">
+                    {isCalibrated ? 'Calibrated Absolute DSM' : 'Continuous Relative Elevation'}
                   </dd>
                 </div>
               </dl>
@@ -1368,15 +1381,21 @@ export const InspectorPanel: React.FC = () => {
                 <span className="text-[11px] font-mono uppercase tracking-wider text-dw-text-muted font-semibold">
                   GEOSPATIAL STATUS
                 </span>
-                <span className="text-[10px] font-mono text-dw-text-secondary">
-                  {imageInput?.metadata?.spatial.hasGeoreference || result.geospatial.georeferenced ? 'PROJECTED' : 'UNPROJECTED'}
+                <span className={`text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded-xs ${
+                  imageInput?.metadata?.spatial.hasGeoreference || result.geospatial.georeferenced
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-dw-base text-amber-400 border border-amber-500/30'
+                }`}>
+                  {imageInput?.metadata?.spatial.hasGeoreference || result.geospatial.georeferenced ? 'GEOREFERENCED' : 'UNPROJECTED'}
                 </span>
               </div>
 
               <dl className="divide-y divide-dw-border-subtle/60 text-xs font-mono">
                 <div className="flex justify-between py-1">
                   <dt className="text-dw-text-muted">COORDINATE SYSTEM</dt>
-                  <dd className="text-dw-text-primary font-medium truncate max-w-[140px]" title={result.geospatial.crs || 'UNPROJECTED'}>
+                  <dd className={`font-semibold text-[11px] truncate max-w-[140px] ${
+                    result.geospatial.crs ? 'text-emerald-400' : 'text-amber-400'
+                  }`} title={result.geospatial.crs || 'UNPROJECTED (RELATIVE GRID)'}>
                     {result.geospatial.crs ? result.geospatial.crs.split(' ')[0] : 'UNPROJECTED'}
                   </dd>
                 </div>
@@ -1401,13 +1420,13 @@ export const InspectorPanel: React.FC = () => {
               </dl>
             </div>
 
-            {/* 4. VALIDATION */}
+            {/* 4. VALIDATION STATUS */}
             <div className="p-3 bg-dw-panel/85 border border-dw-border-strong rounded-xs space-y-2">
               <div className="flex items-center justify-between pb-1.5 border-b border-dw-border-subtle">
                 <div className="flex items-center space-x-1.5 text-dw-accent">
                   <FileCheck2 className="w-3.5 h-3.5" />
                   <span className="text-[11px] font-mono uppercase font-bold tracking-wider">
-                    VALIDATION
+                    VALIDATION STATUS
                   </span>
                 </div>
                 <span className={`text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded-xs ${
@@ -1421,27 +1440,27 @@ export const InspectorPanel: React.FC = () => {
                     ? 'INDEPENDENT'
                     : validationResult?.status === 'REFERENCE_FIT'
                     ? 'REFERENCE FIT'
-                    : 'NOT AVAILABLE'}
+                    : 'NOT VALIDATED'}
                 </span>
               </div>
 
               <dl className="divide-y divide-dw-border-subtle/60 text-xs font-mono">
                 <div className="flex justify-between py-1">
                   <dt className="text-dw-text-muted">REFERENCE SOURCE</dt>
-                  <dd className="text-dw-text-primary font-medium truncate max-w-[140px]" title={validationResult?.reference_source || result.validation?.reference || 'None'}>
-                    {validationResult?.reference_source || result.validation?.reference || (scientificStatus === 'CALIBRATED' ? 'Reference DEM' : 'None')}
+                  <dd className="text-dw-text-primary font-medium truncate max-w-[140px]" title={validationResult?.reference_source || result.validation?.reference || (isCalibrated ? 'Reference DEM' : 'None')}>
+                    {validationResult?.reference_source || result.validation?.reference || (isCalibrated ? 'Reference DEM' : 'None')}
                   </dd>
                 </div>
                 <div className="flex justify-between py-1">
                   <dt className="text-dw-text-muted">RMSE ACCURACY</dt>
                   <dd className="text-dw-text-primary font-semibold tabular-nums">
-                    {typeof validationResult?.overall_metrics?.rmse === 'number'
+                    {isCalibrated && typeof validationResult?.overall_metrics?.rmse === 'number'
                       ? `±${validationResult.overall_metrics.rmse.toFixed(2)} m`
-                      : typeof calibrationResult?.rmse === 'number'
+                      : isCalibrated && typeof calibrationResult?.rmse === 'number'
                       ? `±${calibrationResult.rmse.toFixed(2)} m`
-                      : typeof result.validation?.rmse === 'number'
+                      : isCalibrated && typeof result.validation?.rmse === 'number'
                       ? `±${result.validation.rmse.toFixed(2)} m`
-                      : 'N/A'}
+                      : 'N/A (Relative Surface)'}
                   </dd>
                 </div>
                 <div className="flex justify-between py-1">
@@ -1451,12 +1470,15 @@ export const InspectorPanel: React.FC = () => {
                       ? validationResult.overall_metrics.pearson_r.toFixed(3)
                       : typeof calibrationResult?.correlation === 'number'
                       ? calibrationResult.correlation.toFixed(3)
+                      : typeof result.validation?.correlation === 'number'
+                      ? result.validation.correlation.toFixed(3)
                       : 'N/A'}
                   </dd>
                 </div>
               </dl>
 
               <button
+                type="button"
                 onClick={() => setActiveTool('validation')}
                 className="w-full py-1.5 px-2 bg-dw-elevated hover:bg-dw-base border border-dw-accent/80 hover:border-dw-accent text-dw-accent rounded-xs font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-xs active:scale-[0.98]"
               >
@@ -1472,6 +1494,7 @@ export const InspectorPanel: React.FC = () => {
 
               <div className="space-y-1.5">
                 <button
+                  type="button"
                   onClick={() => setActiveTool('height-probe')}
                   className="w-full py-1.5 px-2.5 bg-dw-elevated hover:bg-dw-base border border-dw-border-strong hover:border-dw-accent rounded-xs text-xs font-mono font-medium text-dw-text-primary hover:text-dw-accent flex items-center justify-between transition-all active:scale-[0.98]"
                 >
@@ -1483,6 +1506,7 @@ export const InspectorPanel: React.FC = () => {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setActiveTool('validation')}
                   className="w-full py-1.5 px-2.5 bg-dw-elevated hover:bg-dw-base border border-dw-border-strong hover:border-dw-accent rounded-xs text-xs font-mono font-medium text-dw-text-primary hover:text-dw-accent flex items-center justify-between transition-all active:scale-[0.98]"
                 >
@@ -1494,6 +1518,7 @@ export const InspectorPanel: React.FC = () => {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setIsExportModalOpen(true)}
                   className="w-full py-1.5 px-2.5 bg-dw-elevated hover:bg-dw-base border border-dw-accent/60 hover:border-dw-accent text-dw-accent rounded-xs text-xs font-mono font-semibold flex items-center justify-between transition-all active:scale-[0.98] shadow-xs"
                 >
@@ -1530,6 +1555,7 @@ export const InspectorPanel: React.FC = () => {
                 <span className="text-dw-text-muted">QUICK EXPORT:</span>
                 <div className="flex items-center space-x-1">
                   <button
+                    type="button"
                     onClick={() => handleQuickExport('terrain', () => exportTerrainRasterFile(scientificStatus === 'CALIBRATED' ? 'geotiff' : 'relative_geotiff'), 'GeoTIFF downloaded')}
                     disabled={quickExporting !== null}
                     className="px-1.5 py-0.5 bg-dw-base hover:bg-dw-elevated text-dw-text-secondary hover:text-dw-text-primary rounded-xs border border-dw-border-subtle transition-colors disabled:opacity-50"
@@ -1538,6 +1564,7 @@ export const InspectorPanel: React.FC = () => {
                     GeoTIFF
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleQuickExport('report', () => exportTerrainReportFile('html'), 'HTML report downloaded')}
                     disabled={quickExporting !== null}
                     className="px-1.5 py-0.5 bg-dw-base hover:bg-dw-elevated text-dw-text-secondary hover:text-dw-text-primary rounded-xs border border-dw-border-subtle transition-colors disabled:opacity-50"
@@ -1546,6 +1573,7 @@ export const InspectorPanel: React.FC = () => {
                     Report
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleQuickExport('session', () => exportSessionJson(), 'Session JSON downloaded')}
                     disabled={quickExporting !== null}
                     className="px-1.5 py-0.5 bg-dw-base hover:bg-dw-elevated text-dw-text-secondary hover:text-dw-text-primary rounded-xs border border-dw-border-subtle transition-colors disabled:opacity-50"
@@ -1554,6 +1582,7 @@ export const InspectorPanel: React.FC = () => {
                     JSON
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleQuickExport('analysis', () => exportAnalysisDataFile('geojson'), 'GeoJSON transects downloaded')}
                     disabled={quickExporting !== null}
                     className="px-1.5 py-0.5 bg-dw-base hover:bg-dw-elevated text-dw-text-secondary hover:text-dw-text-primary rounded-xs border border-dw-border-subtle transition-colors disabled:opacity-50"

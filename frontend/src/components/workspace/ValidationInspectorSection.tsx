@@ -156,24 +156,17 @@ export const ValidationInspectorSection: React.FC = () => {
             </>
           )}
 
-          {scientificStatus === 'RELATIVE' && (
-            <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-xs bg-sky-500/10 text-sky-400 border border-sky-500/30 text-[9px] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-              <span>RELATIVE</span>
+          {(scientificStatus === 'RELATIVE' || scientificStatus === 'CALIBRATION_UNAVAILABLE') && (
+            <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[9px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>RELATIVE TERRAIN</span>
             </span>
           )}
 
           {scientificStatus === 'CALIBRATION_REJECTED' && (
-            <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-xs bg-red-500/10 text-red-400 border border-red-500/30 text-[9px] font-semibold">
+            <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-xs bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[9px] font-semibold">
               <AlertTriangle className="w-2.5 h-2.5" />
-              <span>REJECTED</span>
-            </span>
-          )}
-
-          {scientificStatus === 'CALIBRATION_UNAVAILABLE' && (
-            <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-xs bg-zinc-500/10 text-zinc-400 border border-zinc-500/30 text-[9px] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full border border-zinc-400" />
-              <span>UNAVAILABLE</span>
+              <span>CALIBRATION REJECTED</span>
             </span>
           )}
         </div>

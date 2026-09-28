@@ -52,7 +52,8 @@ export const TerrainCanvas: React.FC<TerrainCanvasProps> = ({
     screeningMask,
     errorMapArray,
     validationResult,
-    isModelSurface
+    isModelSurface,
+    wireframe
   } = useWorkspace();
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export const TerrainCanvas: React.FC<TerrainCanvasProps> = ({
       initialExaggeration: verticalExaggeration,
       initialViewMode: viewMode,
       initialPreset: cameraPreset,
+      initialWireframe: wireframe,
       autoRotate,
       onOrientationChange,
       onAutoRotateChange,
@@ -73,9 +75,11 @@ export const TerrainCanvas: React.FC<TerrainCanvasProps> = ({
       }
     });
     adapterRef.current = adapter;
+    (window as any).__dw_adapter = adapter;
 
     // Strict cleanup routine to eliminate memory and WebGL context leaks
     return () => {
+      delete (window as any).__dw_adapter;
       adapter.dispose();
       adapterRef.current = null;
     };
@@ -103,6 +107,13 @@ export const TerrainCanvas: React.FC<TerrainCanvasProps> = ({
       });
     }
   }, [activeTool, selectedPointA, selectedPointB, observerOffsetA, targetOffsetB, losResult]);
+
+  // Propagate terrain data changes imperatively when the active result updates
+  useEffect(() => {
+    if (adapterRef.current) {
+      adapterRef.current.setTerrainResult(result);
+    }
+  }, [result]);
 
   // Propagate analytical layer updates (Elevation, Slope, Hillshade, Screening, or Default Bedrock)
   useEffect(() => {
@@ -142,13 +153,6 @@ export const TerrainCanvas: React.FC<TerrainCanvasProps> = ({
     }
   }, [activeLayer, result, slopeArray, hillshadeArray, analyticsResult, screeningMask, errorMapArray, validationResult, imageInput?.previewUrl, isModelSurface]);
 
-  // Propagate terrain data changes imperatively when the active result updates
-  useEffect(() => {
-    if (adapterRef.current) {
-      adapterRef.current.setTerrainResult(result);
-    }
-  }, [result]);
-
   // Propagate vertical exaggeration updates imperatively without rebuilding the scene
   useEffect(() => {
     if (adapterRef.current) {
@@ -176,6 +180,13 @@ export const TerrainCanvas: React.FC<TerrainCanvasProps> = ({
       adapterRef.current.setAutoRotate(autoRotate);
     }
   }, [autoRotate]);
+
+  // Propagate wireframe changes
+  useEffect(() => {
+    if (adapterRef.current && typeof wireframe === 'boolean') {
+      adapterRef.current.setWireframe(wireframe);
+    }
+  }, [wireframe]);
 
   const isMeasurementActive = activeTool === 'height-probe' || activeTool === 'two-point' || activeTool === 'cross-section';
   const cursorClass = viewMode === 'first-person' || isMeasurementActive

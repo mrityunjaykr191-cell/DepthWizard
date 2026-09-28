@@ -29,6 +29,7 @@ export interface TerrainAdapterOptions {
   initialExaggeration?: number;
   initialViewMode?: ViewMode;
   initialPreset?: CameraPreset;
+  initialWireframe?: boolean;
   autoRotate?: boolean;
   visualConfig?: Partial<TerrainVisualConfig>;
   onOrientationChange?: (orientation: CameraOrientation) => void;
@@ -107,6 +108,9 @@ export class TerrainRenderAdapter {
 
     // 4. Construct generic TerrainMesh from the elevation grid
     this.terrainMesh = new TerrainMesh(initialGrid, options.initialExaggeration ?? 1.0, options.visualConfig);
+    if (options.initialWireframe) {
+      this.terrainMesh.setWireframe(true);
+    }
     this.scene.add(this.terrainMesh.mesh);
 
     // 5. Initial Camera framing around terrain bounding box
@@ -540,6 +544,14 @@ export class TerrainRenderAdapter {
   public setVerticalExaggeration(scale: number): void {
     if (this.isDisposed) return;
     const changed = this.terrainMesh.setVerticalExaggeration(scale);
+    if (changed) {
+      this.requestRender();
+    }
+  }
+
+  public setWireframe(enabled: boolean): void {
+    if (this.isDisposed) return;
+    const changed = this.terrainMesh.setWireframe(enabled);
     if (changed) {
       this.requestRender();
     }

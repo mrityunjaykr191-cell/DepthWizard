@@ -23,10 +23,8 @@ export const WorkspaceHeader: React.FC = () => {
     imageInput,
     setInputModalOpen,
     isEstimatingDepth,
-    isCalibrated,
-    surfaceElevationType,
-    calibrationResult,
-    isCalibrating
+    isCalibrating,
+    scientificStatus
   } = useWorkspace();
 
   const isRealInputLoaded = Boolean(imageInput?.status === 'ready' && imageInput?.metadata);
@@ -112,10 +110,15 @@ export const WorkspaceHeader: React.FC = () => {
       <div className="flex items-center space-x-3.5">
         {/* Scientific Surface Elevation Badge */}
         <div className="flex items-center">
-          {isCalibrated && surfaceElevationType === 'absolute' ? (
+          {scientificStatus === 'CALIBRATED' ? (
             <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-semibold tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>CALIBRATED ({calibrationResult?.referenceSource || 'DEM'})</span>
+              <span>METRIC TERRAIN</span>
+            </span>
+          ) : scientificStatus === 'CALIBRATION_REJECTED' ? (
+            <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xs bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[10px] font-mono font-semibold tracking-wider">
+              <AlertTriangle className="w-3 h-3 text-rose-400" />
+              <span>CALIBRATION REJECTED</span>
             </span>
           ) : (
             <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-xs bg-dw-panel text-dw-text-secondary border border-dw-border-subtle text-[10px] font-mono font-medium tracking-wider">
