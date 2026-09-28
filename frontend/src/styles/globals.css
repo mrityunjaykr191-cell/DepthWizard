@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root,
+  :root[data-theme="dark"],
+  html.dark,
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --dw-base: 9 13 18;
+    --dw-surface: 15 21 29;
+    --dw-panel: 20 28 38;
+    --dw-elevated: 26 36 50;
+    --dw-hover: 31 42 56;
+
+    --dw-border-subtle: 30 41 59;
+    --dw-border-muted: 42 55 74;
+    --dw-border-strong: 61 79 104;
+
+    --dw-text-primary: 248 250 252;
+    --dw-text-secondary: 148 163 184;
+    --dw-text-muted: 100 116 139;
+    --dw-text-disabled: 71 85 105;
+
+    --dw-accent: 2 132 199;
+    --dw-accent-hover: 3 105 161;
+    --dw-accent-active: 56 189 248;
+    --dw-accent-subtle: 14 165 233;
+
+    --dw-status-ready: 16 185 129;
+    --dw-status-processing: 56 189 248;
+    --dw-status-warning: 245 158 11;
+    --dw-status-error: 239 68 68;
+    --dw-status-unavailable: 100 116 139;
+
+    --dw-scrollbar-track: 9 13 18;
+    --dw-scrollbar-thumb: 30 41 59;
+    --dw-scrollbar-thumb-hover: 51 65 85;
+    --dw-focus-ring: 56 189 248;
+  }
+
+  :root[data-theme="light"],
+  html.light,
+  [data-theme="light"] {
+    color-scheme: light;
+    --dw-base: 241 245 249;       /* Pale slate / blue-gray cartographic surface #f1f5f9 */
+    --dw-surface: 248 250 252;    /* Soft off-white surface #f8fafc */
+    --dw-panel: 226 232 240;      /* Muted slate-200 panel #e2e8f0 */
+    --dw-elevated: 219 226 235;   /* Tonal blue-gray #dbe2eb */
+    --dw-hover: 226 232 240;
+
+    --dw-border-subtle: 219 226 235;
+    --dw-border-muted: 203 213 225;
+    --dw-border-strong: 148 163 184;
+
+    --dw-text-primary: 15 23 42;    /* Deep navy / charcoal slate-900 */
+    --dw-text-secondary: 51 65 85;  /* Muted slate-700 */
+    --dw-text-muted: 100 116 139;   /* Slate-500 */
+    --dw-text-disabled: 148 163 184;
+
+    --dw-accent: 2 132 199;         /* Sky-600 */
+    --dw-accent-hover: 3 105 161;   /* Sky-700 */
+    --dw-accent-active: 2 132 199;
+    --dw-accent-subtle: 2 132 199;
+
+    --dw-status-ready: 5 150 105;    /* Emerald-600 */
+    --dw-status-processing: 2 132 199;
+    --dw-status-warning: 217 119 6;
+    --dw-status-error: 220 38 38;
+    --dw-status-unavailable: 100 116 139;
+
+    --dw-scrollbar-track: 248 250 252;
+    --dw-scrollbar-thumb: 203 213 225;
+    --dw-scrollbar-thumb-hover: 148 163 184;
+    --dw-focus-ring: 2 132 199;
+  }
+
+  body {
+    background-color: rgb(var(--dw-base));
+    color: rgb(var(--dw-text-primary));
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Accessible focus indicators per better-accessibility */
+  *:focus-visible {
+    outline: 2px solid rgb(var(--dw-focus-ring));
+    outline-offset: 2px;
+  }
+
+  /* Custom subtle scrollbars for analyst panels */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--dw-scrollbar-track));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--dw-scrollbar-thumb));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--dw-scrollbar-thumb-hover));
+  }
+  /* Smooth theme transitions across landing page surfaces and chrome (250-450ms) */
+  body,
+  header,
+  aside,
+  nav,
+  main,
+  section,
+  footer,
+  .theme-chroma,
+  .bg-dw-surface,
+  .bg-dw-panel,
+  .bg-dw-base,
+  .border-dw-border-subtle,
+  .border-dw-border-strong {
+    transition: background-color 300ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 300ms cubic-bezier(0.16, 1, 0.3, 1),
+                color 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

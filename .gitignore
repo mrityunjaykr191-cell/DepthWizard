@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Python caches & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Model weights and checkpoints (Strictly DO NOT COMMIT large checkpoints)
+backend/checkpoints/
+*.pth
+*.pt
+*.safetensors
+*.bin
+*.onnx
+
+# Environment & local configurations
+.env
+.env.*
+.env.local
+.env.*.local
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Scratch & test artifacts
+scratch/
+.pytest_cache/
+.coverage
+*.log
+
+# Agent development tooling
+.agents/
+.claude/
+skills-lock.json
