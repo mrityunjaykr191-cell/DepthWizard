@@ -8,6 +8,8 @@
  * - /api/terrain/profile: Cross-Section (bilinear profile transect sampling)
  */
 
+import { apiUrl } from './api';
+
 export interface PointProbeRequest {
   x: number;
   y: number;
@@ -125,7 +127,7 @@ export interface CrossSectionResponse {
  * Executes a continuous height probe at coordinates (x, y) on the terrain raster.
  */
 export async function probeTerrainPoint(req: PointProbeRequest): Promise<PointProbeResponse> {
-  const resp = await fetch('/api/terrain/probe', {
+  const resp = await fetch(apiUrl('/api/terrain/probe'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req)
@@ -143,7 +145,7 @@ export async function probeTerrainPoint(req: PointProbeRequest): Promise<PointPr
  * Computes two-point delta metrics between Point A and Point B.
  */
 export async function measureTwoPoints(req: TwoPointMeasureRequest): Promise<TwoPointMeasureResponse> {
-  const resp = await fetch('/api/terrain/measure', {
+  const resp = await fetch(apiUrl('/api/terrain/measure'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req)
@@ -161,7 +163,7 @@ export async function measureTwoPoints(req: TwoPointMeasureRequest): Promise<Two
  * Extracts a cross-section elevation profile along transect A->B.
  */
 export async function getCrossSectionProfile(req: CrossSectionRequest): Promise<CrossSectionResponse> {
-  const resp = await fetch('/api/terrain/profile', {
+  const resp = await fetch(apiUrl('/api/terrain/profile'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req)
@@ -246,7 +248,7 @@ export interface TerrainAnalyticsResponse {
  * Authority: Phase 4A & Phase 4C Specification
  */
 export async function fetchTerrainAnalytics(req: TerrainAnalyticsRequest): Promise<TerrainAnalyticsResponse> {
-  const resp = await fetch('/api/terrain/analytics', {
+  const resp = await fetch(apiUrl('/api/terrain/analytics'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req)
@@ -267,7 +269,7 @@ import { TerrainQARequest, TerrainQAResponse } from '../types/qa';
  * Authority: Phase 4D Specification
  */
 export async function fetchTerrainQA(req: TerrainQARequest): Promise<TerrainQAResponse> {
-  const resp = await fetch('/api/terrain/qa', {
+  const resp = await fetch(apiUrl('/api/terrain/qa'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req)

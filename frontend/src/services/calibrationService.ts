@@ -14,6 +14,7 @@ import {
   ReferenceSource,
   CalibrationStatus 
 } from '../types/calibration';
+import { apiUrl } from './api';
 
 /**
  * Decodes base64-encoded Float32Array lossless binary payload.
@@ -32,7 +33,7 @@ function decodeFloat32Base64(b64: string): Float32Array {
  * Queries backend for supported reference DEM sources and tile availability.
  */
 export async function fetchCalibrationSources(): Promise<CalibrationSourcesInfo> {
-  const res = await fetch('/api/calibration/sources');
+  const res = await fetch(apiUrl('/api/calibration/sources'));
   if (!res.ok) {
     throw new Error(`Failed to query calibration sources: HTTP ${res.status}`);
   }
@@ -64,7 +65,7 @@ export async function requestCalibration(
     formData.append('raw_depth_b64', rawDepthB64);
   }
 
-  const res = await fetch('/api/calibrate', {
+  const res = await fetch(apiUrl('/api/calibrate'), {
     method: 'POST',
     body: formData
   });

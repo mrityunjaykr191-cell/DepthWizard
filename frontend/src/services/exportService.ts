@@ -4,8 +4,9 @@
  */
 
 import { SessionExport, TerrainExportParams } from '../types/export';
+import { apiUrl } from './api';
 
-const API_BASE = '/api/export';
+const API_BASE = apiUrl('/api/export');
 
 /**
  * Downloads a binary Blob in the user's browser.

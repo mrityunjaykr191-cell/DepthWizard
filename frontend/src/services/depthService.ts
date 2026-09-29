@@ -11,6 +11,7 @@ import {
   BackendDepthResponse, 
   BackendHealthResponse 
 } from '../types/depthResult';
+import { apiUrl } from './api';
 
 /**
  * Decodes a base64-encoded little-endian Float32 binary buffer into a typed Float32Array.
@@ -30,7 +31,7 @@ export function decodeBase64ToFloat32(b64: string): Float32Array {
  * Verifies that the FastAPI depth estimation backend is online and reachable.
  */
 export async function checkDepthBackendHealth(): Promise<BackendHealthResponse> {
-  const response = await fetch('/api/health', {
+  const response = await fetch(apiUrl('/api/health'), {
     method: 'GET',
     headers: {
       'Accept': 'application/json'
@@ -65,7 +66,7 @@ export async function requestDepthEstimation(
 
   let response: Response;
   try {
-    response = await fetch('/api/depth', {
+    response = await fetch(apiUrl('/api/depth'), {
       method: 'POST',
       body: formData,
     });

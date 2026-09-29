@@ -11,8 +11,9 @@ import {
   TerrainScreeningRequest,
   TerrainScreeningResponse
 } from '../types/intelligence';
+import { apiUrl } from './api';
 
-const API_BASE = '/api';
+const API_BASE = apiUrl('/api');
 
 export async function fetchLineOfSight(req: LineOfSightRequest): Promise<LineOfSightResponse> {
   const resp = await fetch(`${API_BASE}/terrain/los`, {

@@ -4,8 +4,9 @@
  */
 
 import { TerrainValidationRequest, TerrainValidationResponse } from '../types/validation';
+import { apiUrl } from './api';
 
-const API_BASE = '/api';
+const API_BASE = apiUrl('/api');
 
 export async function fetchTerrainValidation(
   req: TerrainValidationRequest
