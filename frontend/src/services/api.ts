@@ -8,7 +8,7 @@
  * In production (e.g., Vercel), prefixes calls with VITE_API_BASE_URL (e.g. Modal backend).
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+const API_BASE_URL = "https://mrityunjaykr191-cell--depthwizard-backend-fastapi-app.modal.run"
 
 export function apiUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {
