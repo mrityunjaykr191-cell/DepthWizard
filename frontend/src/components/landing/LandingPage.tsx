@@ -13,28 +13,45 @@
  * 8. Pure product-facing identity (all hackathon / demo labels removed)
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from '../../router/Router';
-import { motion, useScroll, useSpring } from 'motion/react';
+import { motion, useScroll, useSpring, useTransform } from 'motion/react';
 import { LandingHeader } from './LandingHeader';
 import { LandingFooter } from './LandingFooter';
 import { SpatialBackground } from './SpatialBackground';
-import { HeroTransformationVisual } from './HeroTransformationVisual';
+import { HeroProductPreview } from './HeroProductPreview';
 import { TransformationSection } from './TransformationSection';
 import { IntelligenceSection } from './IntelligenceSection';
 import { ScientificIntegritySection } from './ScientificIntegritySection';
-import { ArrowRight, Binary, ChevronRight, Mountain } from 'lucide-react';
+import { ArrowRight, Binary, ChevronRight, ChevronDown, Mountain } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
   const { navigate } = useRouter();
 
   // Scroll-linked progress for subtle technical timeline tracking
-  const { scrollYProgress } = useScroll();
+  const { scrollY, scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
     restDelta: 0.001
   });
+
+  // Fade out continuation cue smoothly as user begins scrolling down
+  const scrollCueOpacity = useTransform(scrollY, [0, 80], [1, 0]);
+
+  // Respect prefers-reduced-motion
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  const scrollToNextSection = () => {
+    document.getElementById('pipeline')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-dw-base text-dw-text-primary flex flex-col justify-between selection:bg-dw-accent selection:text-white font-sans antialiased overflow-x-hidden relative">
@@ -108,29 +125,65 @@ export const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Linear Geospatial Pipeline Breadcrumb */}
-              <div className="pt-6 border-t border-dw-border-subtle flex items-center space-x-2 font-mono text-xs text-dw-text-muted overflow-x-auto">
-                <span className="text-dw-text-secondary font-semibold">OPTICAL SATELLITE</span>
-                <ChevronRight className="w-3.5 h-3.5 text-dw-text-disabled" />
-                <span className="text-dw-text-secondary font-semibold">RELATIVE DEPTH</span>
-                <ChevronRight className="w-3.5 h-3.5 text-dw-text-disabled" />
-                <span className="text-dw-text-secondary font-semibold">ANCHORED TERRAIN</span>
-                <ChevronRight className="w-3.5 h-3.5 text-dw-text-disabled" />
-                <span className="text-dw-accent font-semibold">ANALYTICS</span>
+              {/* Supporting Product-Status Strip */}
+              <div className="pt-5 border-t border-dw-border-subtle flex items-center space-x-1.5 sm:space-x-2 font-mono text-[10px] sm:text-xs text-dw-text-muted overflow-x-auto whitespace-nowrap">
+                <span className="px-2 py-0.5 rounded-xs bg-dw-surface border border-dw-border-subtle text-dw-text-secondary font-semibold">
+                  OPTICAL INPUT
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-dw-text-disabled shrink-0" />
+                <span className="px-2 py-0.5 rounded-xs bg-dw-surface border border-dw-border-subtle text-dw-text-secondary font-semibold">
+                  RELATIVE DEPTH
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-dw-accent shrink-0" />
+                <span className="px-2 py-0.5 rounded-xs bg-dw-accent/15 border border-dw-accent/40 text-dw-accent font-semibold shadow-xs">
+                  RECONSTRUCTED TERRAIN
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-dw-accent shrink-0" />
+                <button
+                  onClick={scrollToNextSection}
+                  className="px-2 py-0.5 rounded-xs bg-dw-surface border border-dw-border-subtle hover:border-dw-accent/50 text-dw-text-secondary hover:text-dw-accent font-medium inline-flex items-center space-x-1 transition-colors cursor-pointer group"
+                  title="Explore Analytical Progression"
+                >
+                  <span>ANALYSIS</span>
+                  <ChevronDown className="w-3 h-3 text-dw-accent group-hover:translate-y-0.5 transition-transform" />
+                </button>
               </div>
             </motion.div>
 
-            {/* Right Column: New Continuous Transformation Visual (Optical -> Depth -> Terrain) */}
+            {/* Right Column: Interactive Product Hero (Optical -> Depth -> 3D Terrain) */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
               className="lg:col-span-6 w-full flex items-center justify-center"
             >
-              <HeroTransformationVisual />
+              <HeroProductPreview />
             </motion.div>
 
           </div>
+
+          {/* Subtle Scroll Continuation Cue (Visual Handoff: Hero -> Analytical Progression) */}
+          <motion.div
+            style={{ opacity: scrollCueOpacity }}
+            className="absolute bottom-2.5 sm:bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-auto z-20 select-none"
+          >
+            <button
+              onClick={scrollToNextSection}
+              className="flex flex-col items-center space-y-1 group cursor-pointer focus-visible:outline-none"
+              aria-label="Scroll to Analytical Progression"
+            >
+              <span className="font-mono text-[9px] tracking-widest uppercase text-dw-text-muted group-hover:text-dw-accent transition-colors">
+                SCROLL TO EXPLORE
+              </span>
+              <div className="w-[1px] h-5 bg-gradient-to-b from-dw-border-strong via-dw-accent to-dw-border-subtle group-hover:via-dw-accent-hover transition-colors" />
+              <motion.div
+                animate={reducedMotion ? {} : { y: [0, 3, 0] }}
+                transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+              >
+                <ChevronDown className="w-3.5 h-3.5 text-dw-text-muted group-hover:text-dw-accent transition-colors -mt-1" />
+              </motion.div>
+            </button>
+          </motion.div>
         </section>
 
         {/* ===================================================================
