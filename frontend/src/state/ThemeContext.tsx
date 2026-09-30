@@ -29,9 +29,7 @@ function getInitialTheme(): Theme {
   } catch {
     // Fallback if storage access is restricted
   }
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches 
-    ? 'light' 
-    : 'dark';
+  return 'dark';
 }
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
