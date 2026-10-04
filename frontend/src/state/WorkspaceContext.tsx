@@ -281,6 +281,10 @@ export interface WorkspaceState {
   exportAnalysisDataFile: (format: 'json' | 'geojson' | 'csv', profileTool?: string) => Promise<void>;
   exportTerrainReportFile: (format: 'html' | 'pdf') => Promise<void>;
 
+  // GAMUS Paired Reference Comparison State
+  isComparisonModalOpen: boolean;
+  setIsComparisonModalOpen: (open: boolean) => void;
+
   // Actions
   setScenario: (scenario: ScenarioId) => void;
   switchToSyntheticFixture: (scenario?: ScenarioId) => void;
@@ -394,6 +398,9 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   // Phase 5B: Geospatial Export State
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+
+  // GAMUS Paired Reference Comparison State
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState<boolean>(false);
 
   const clearMeasurements = () => {
     selectedPointARef.current = null;
@@ -1877,7 +1884,9 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
         exportSessionJson,
         exportTerrainRasterFile,
         exportAnalysisDataFile,
-        exportTerrainReportFile
+        exportTerrainReportFile,
+        isComparisonModalOpen,
+        setIsComparisonModalOpen
       }}
     >
       {children}

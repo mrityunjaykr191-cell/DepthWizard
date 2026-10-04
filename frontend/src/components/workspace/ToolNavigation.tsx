@@ -37,6 +37,7 @@ export const ToolNavigation: React.FC = () => {
     setInputModalOpen,
     validationResult,
     setIsExportModalOpen,
+    setIsComparisonModalOpen,
     isSidebarCollapsed,
     setIsSidebarCollapsed
   } = useWorkspace();
@@ -189,39 +190,52 @@ export const ToolNavigation: React.FC = () => {
                 )}
               </button>
             ) : (
-              <button
-                onClick={() => setInputModalOpen(true)}
-                className="w-full text-left p-2 bg-dw-panel hover:bg-dw-elevated border border-dw-border-strong rounded-xs space-y-1.5 transition-all duration-fast group focus-visible:outline-none"
-                title="Inspect or replace ingested input image"
-              >
-                <div className="flex items-center space-x-2">
-                  {imageInput.previewUrl ? (
-                    <div className="w-9 h-9 rounded-xs overflow-hidden border border-dw-border-subtle shrink-0 bg-dw-base">
-                      <img 
-                        src={imageInput.previewUrl} 
-                        alt="Source thumbnail" 
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-9 h-9 rounded-xs bg-dw-surface border border-dw-border-subtle flex items-center justify-center text-dw-accent shrink-0">
-                      <UploadCloud className="w-4 h-4" />
-                    </div>
-                  )}
-                  <div className="overflow-hidden flex-1 min-w-0">
-                    <div className="text-xs font-mono font-semibold text-dw-text-primary truncate" title={imageInput.metadata.filename}>
-                      {imageInput.metadata.filename}
-                    </div>
-                    <div className="text-[10px] font-mono text-dw-accent uppercase">
-                      {imageInput.metadata.format} • {imageInput.metadata.width}×{imageInput.metadata.height}
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => setInputModalOpen(true)}
+                  className="w-full text-left p-2 bg-dw-panel hover:bg-dw-elevated border border-dw-border-strong rounded-xs space-y-1.5 transition-all duration-fast group focus-visible:outline-none"
+                  title="Inspect or replace ingested input image"
+                >
+                  <div className="flex items-center space-x-2">
+                    {imageInput.previewUrl ? (
+                      <div className="w-9 h-9 rounded-xs overflow-hidden border border-dw-border-subtle shrink-0 bg-dw-base">
+                        <img 
+                          src={imageInput.previewUrl} 
+                          alt="Source thumbnail" 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-9 h-9 rounded-xs bg-dw-surface border border-dw-border-subtle flex items-center justify-center text-dw-accent shrink-0">
+                        <UploadCloud className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div className="overflow-hidden flex-1 min-w-0">
+                      <div className="text-xs font-mono font-semibold text-dw-text-primary truncate" title={imageInput.metadata.filename}>
+                        {imageInput.metadata.filename}
+                      </div>
+                      <div className="text-[10px] font-mono text-dw-accent uppercase">
+                        {imageInput.metadata.format} • {imageInput.metadata.width}×{imageInput.metadata.height}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="text-[10px] font-mono text-dw-text-secondary flex justify-between border-t border-dw-border-subtle/60 pt-1">
-                  <span>STATUS: READY</span>
-                  <span className="text-dw-accent group-hover:underline">INSPECT →</span>
-                </div>
-              </button>
+                  <div className="text-[10px] font-mono text-dw-text-secondary flex justify-between border-t border-dw-border-subtle/60 pt-1">
+                    <span>STATUS: READY</span>
+                    <span className="text-dw-accent group-hover:underline">INSPECT →</span>
+                  </div>
+                </button>
+                {imageInput.metadata.filename.toLowerCase().includes('dc_01_25') && !isSidebarCollapsed && (
+                  <button
+                    type="button"
+                    onClick={() => setIsComparisonModalOpen(true)}
+                    className="w-full py-1 px-2 rounded-xs border border-emerald-500/40 bg-dw-surface hover:bg-dw-elevated text-emerald-400 text-[10px] font-mono font-semibold flex items-center justify-between transition-colors shadow-xs"
+                    title="Compare DC_01_25 prediction against paired GAMUS AGL reference"
+                  >
+                    <span>COMPARE REF</span>
+                    <span className="text-[9px] text-emerald-300 font-sans">AGL →</span>
+                  </button>
+                )}
+              </div>
             )
           ) : (
             isSidebarCollapsed ? (

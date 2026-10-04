@@ -7,13 +7,17 @@ import {
   Info, 
   Clock, 
   Eye, 
-  RefreshCw 
+  RefreshCw,
+  ArrowRight 
 } from 'lucide-react';
 
 export const ValidationInspectorSection: React.FC = () => {
   const {
     scientificStatus,
     result,
+    imageInput,
+    depthResult,
+    setIsComparisonModalOpen,
     calibrationResult,
     calibrationError,
     validationResult,
@@ -200,6 +204,28 @@ export const ValidationInspectorSection: React.FC = () => {
               <dd className="text-dw-text-muted italic">Withheld (Uncalibrated)</dd>
             </div>
           </dl>
+
+          {/* GAMUS Paired Reference Comparison Option */}
+          {imageInput?.metadata?.filename?.toLowerCase().includes('dc_01_25') && (
+            <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xs space-y-1.5 pt-2">
+              <div className="flex items-center justify-between text-[10px] text-emerald-400 font-semibold uppercase">
+                <span>PAIRED GAMUS AGL REFERENCE</span>
+                <span className="text-[9px] px-1 py-0.2 bg-emerald-500/20 rounded-xs">AVAILABLE</span>
+              </div>
+              <p className="text-[10px] text-dw-text-muted font-sans leading-tight">
+                Paired reference height field is available for single-tile comparison.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsComparisonModalOpen(true)}
+                disabled={!depthResult}
+                className="w-full py-1.5 px-2 bg-dw-elevated hover:bg-dw-surface border border-emerald-500/50 text-emerald-400 hover:text-white rounded-xs text-[10px] font-mono font-semibold transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
+              >
+                <span>COMPARE REFERENCE</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 

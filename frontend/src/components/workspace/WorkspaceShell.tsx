@@ -5,6 +5,7 @@ import { TerrainViewport } from './TerrainViewport';
 import { InspectorPanel } from './InspectorPanel';
 import { ImageIngestionModal } from './input/ImageIngestionModal';
 import { ExportModal } from './export/ExportModal';
+import { ReferenceComparisonModal } from './ReferenceComparisonModal';
 
 export const WorkspaceShell: React.FC = () => {
   return (
@@ -29,6 +30,9 @@ export const WorkspaceShell: React.FC = () => {
 
       {/* Geospatial Export & Report Modal */}
       <ExportModal />
+
+      {/* GAMUS Paired Reference Comparison Modal */}
+      <ReferenceComparisonModal />
     </div>
   );
 };

@@ -15,8 +15,32 @@ import {
   ShieldCheck,
   ShieldAlert,
   Loader2,
-  Cpu
+  Cpu,
+  FlaskConical
 } from 'lucide-react';
+
+// ── Built-in sample definitions ────────────────────────────────────────────────
+interface SampleDef {
+  /** Browser path (served from frontend/public) */
+  url: string;
+  filename: string;
+  label: string;
+  sublabel: string;
+}
+const SAMPLES: SampleDef[] = [
+  {
+    url: '/samples/DC_01_25.tif',
+    filename: 'DC_01_25.tif',
+    label: 'GAMUS · DC_01_25',
+    sublabel: 'Training RGB · 1024 × 1024',
+  },
+  {
+    url: '/samples/SV_Berlin_52.5082_13.4359_RGB.tif',
+    filename: 'SV_Berlin_52.5082_13.4359_RGB.tif',
+    label: 'Berlin · Demo Scene',
+    sublabel: 'Demo imagery',
+  },
+];
 
 export const ImageIngestionModal: React.FC = () => {
   const { 
@@ -38,7 +62,25 @@ export const ImageIngestionModal: React.FC = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStage, setProcessingStage] = useState<string>('');
+  const [loadingSample, setLoadingSample] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSampleLoad = async (sample: SampleDef) => {
+    if (loadingSample) return; // prevent duplicate clicks
+    setLoadingSample(sample.filename);
+    try {
+      const res = await fetch(sample.url);
+      if (!res.ok) throw new Error(`Failed to fetch sample: HTTP ${res.status}`);
+      const blob = await res.blob();
+      const file = new File([blob], sample.filename, { type: 'image/tiff' });
+      await handleFile(file);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[DepthWizard] Sample load error:', err);
+    } finally {
+      setLoadingSample(null);
+    }
+  };
 
   // Close on Escape key
   useEffect(() => {
@@ -696,6 +738,52 @@ export const ImageIngestionModal: React.FC = () => {
 
                 <div className="text-[11px] text-dw-text-muted text-center pt-2">
                   Supports JPG/JPEG, PNG, and GeoTIFF/TIFF up to 100 MB
+                </div>
+              </div>
+
+              {/* ── TRY A SAMPLE ─────────────────────────────────────────── */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center space-x-1.5 text-[11px] font-mono text-dw-text-muted uppercase tracking-wider select-none">
+                  <FlaskConical className="w-3 h-3 text-dw-accent" />
+                  <span>TRY A SAMPLE</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {SAMPLES.map((sample) => {
+                    const isThis = loadingSample === sample.filename;
+                    const isAny  = loadingSample !== null;
+                    return (
+                      <button
+                        key={sample.filename}
+                        type="button"
+                        disabled={isAny}
+                        onClick={() => handleSampleLoad(sample)}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xs border text-left transition-all focus-visible:ring-2 focus-visible:ring-dw-accent ${
+                          isAny
+                            ? 'border-dw-border-subtle bg-dw-panel/40 cursor-wait opacity-70'
+                            : 'border-dw-border-subtle bg-dw-panel/70 hover:border-dw-accent/60 hover:bg-dw-panel'
+                        }`}
+                        aria-label={`Load sample image: ${sample.label}`}
+                      >
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="text-xs font-mono font-semibold text-dw-text-primary truncate">
+                            {sample.label}
+                          </div>
+                          <div className="text-[11px] font-mono text-dw-text-muted">
+                            {sample.sublabel}
+                          </div>
+                        </div>
+                        <div className="shrink-0 ml-3">
+                          {isThis ? (
+                            <Loader2 className="w-3.5 h-3.5 text-dw-accent animate-spin" />
+                          ) : (
+                            <span className="text-[10px] font-mono font-semibold text-dw-accent border border-dw-accent/40 rounded-xs px-1.5 py-0.5 whitespace-nowrap">
+                              Use Sample
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

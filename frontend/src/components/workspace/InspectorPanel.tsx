@@ -23,7 +23,8 @@ import {
   XCircle,
   FileText,
   Download,
-  X
+  X,
+  ArrowRight
 } from 'lucide-react';
 
 export const InspectorPanel: React.FC = () => {
@@ -38,6 +39,8 @@ export const InspectorPanel: React.FC = () => {
     imageInput, 
     setInputModalOpen, 
     clearImageInput,
+    depthResult,
+    setIsComparisonModalOpen,
     calibrationResult,
     probeResult,
     isProbing,
@@ -1306,6 +1309,45 @@ export const InspectorPanel: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* GAMUS Paired Reference Comparison */}
+            {imageInput?.metadata?.filename?.toLowerCase().includes('dc_01_25') && (
+              <div className="p-3 bg-dw-panel/85 border border-emerald-500/30 rounded-xs space-y-2">
+                <div className="flex items-center justify-between pb-1 border-b border-dw-border-subtle/60">
+                  <div className="flex items-center space-x-1.5 text-dw-text-primary">
+                    <FileCheck2 className="w-3.5 h-3.5 text-dw-accent" />
+                    <span className="text-[11px] font-mono uppercase font-bold tracking-wider">
+                      REFERENCE COMPARISON
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold uppercase">
+                    GAMUS AGL
+                  </span>
+                </div>
+                <p className="text-[10px] text-dw-text-muted font-sans leading-tight">
+                  Paired GAMUS AGL reference
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsComparisonModalOpen(true)}
+                  disabled={!depthResult}
+                  className={`w-full py-1.5 px-3 rounded-xs font-mono text-xs font-semibold transition-all flex items-center justify-between ${
+                    depthResult 
+                      ? 'bg-dw-elevated hover:bg-dw-surface border border-dw-accent text-dw-accent hover:text-white shadow-xs cursor-pointer'
+                      : 'bg-dw-panel border border-dw-border-subtle text-dw-text-disabled cursor-not-allowed'
+                  }`}
+                  title={depthResult ? "Compare predicted height against paired GAMUS AGL ground truth" : "Estimate depth first to compare reference"}
+                >
+                  <span>COMPARE REFERENCE</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                {!depthResult && (
+                  <div className="text-[9px] text-amber-400/80 font-mono text-center">
+                    Estimate depth first to compare
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 2. TERRAIN STATUS */}
             <div className="p-3 bg-dw-panel/85 border border-dw-border-strong rounded-xs space-y-2">
