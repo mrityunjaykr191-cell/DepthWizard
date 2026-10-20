@@ -40,3 +40,4 @@ scratch/
 .agents/
 .claude/
 skills-lock.json
+docs/
